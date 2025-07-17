@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e  # Exit immediately on any error
+set -e  # Exit on any error
 
 VERSION=$1
 
@@ -31,19 +31,27 @@ echo "🔧 Building app..."
 (cd app && make clean && make BUILD=release)
 
 # Prepare release output
-mkdir -p release
-cp bootloader/dist/default/release/bootloader.hex release/bootloader_${VERSION}.hex
-cp app/dist/default/release/app.hex release/app_${VERSION}.hex
+RELEASE_DIR=release
+ZIP_NAME=firmware_${VERSION}.zip
+mkdir -p "$RELEASE_DIR"
 
-# Stage and commit any modified or new files
-echo "📦 Committing release artifacts..."
+cp bootloader/dist/default/release/bootloader.hex "$RELEASE_DIR/bootloader_${VERSION}.hex"
+cp app/dist/default/release/app.hex "$RELEASE_DIR/app_${VERSION}.hex"
+
+# Create .zip archive
+cd "$RELEASE_DIR"
+zip -r "../$ZIP_NAME" ./*
+cd ..
+
+echo "📦 Created ZIP archive: $ZIP_NAME"
+
+# Commit, tag, push
+echo "📂 Committing release artifacts..."
 git add .
 git commit -am "Release $VERSION"
-
-# Create a Git tag and push
 git tag "$VERSION"
 git push origin "$VERSION"
 
-echo "🏷️ Tagged repository with $VERSION"
-echo "✅ HEX files are ready in ./release:"
-ls -lh release
+echo "✅ HEX files and ZIP archive ready:"
+ls -lh release/
+ls -lh "$ZIP_NAME"
